@@ -1,0 +1,29 @@
+name: Tidewave Connect
+description: Opens Tidewave Connect for your running web app in a browser on the runner, so coding agents can drive your app through the Tidewave MCP.
+author: Tidewave
+branding:
+  icon: globe
+  color: blue
+
+inputs:
+  app_url:
+    description: The URL of your web app with Tidewave installed, such as http://localhost:4000. The app may still be booting when the action starts.
+    required: true
+  api_key:
+    description: A Tidewave API key, created in your Tidewave account or team settings. Pass it from a secret.
+    required: true
+  max_wait_time:
+    description: Maximum time in seconds to wait for the app to boot and for Tidewave Connect to be ready.
+    required: false
+    default: "300"
+
+outputs:
+  mcp_url:
+    description: The URL of the Tidewave MCP server in your app, to configure your coding agent with.
+  log_file:
+    description: The path to the browser log file, including console messages from Tidewave Connect and your app.
+
+runs:
+  using: node24
+  main: src/main.mjs
+  post: src/post.mjs

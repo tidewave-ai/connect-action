@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Start the mock server
+        run: node test/mock-server.mjs &
+
+      - name: Run the action
+        id: connect
+        uses: ./
+        with:
+          app_url: http://localhost:4100
+          api_key: tw_test
+          max_wait_time: 60
+
+      - name: Check that the browser keeps running
+        run: node test/check-status.mjs
+        env:
+          MCP_URL: ${{ steps.connect.outputs.mcp_url }}
+
+      - name: Run the action with an invalid API key
+        id: invalid
+        continue-on-error: true
+        uses: ./
+        with:
+          app_url: http://localhost:4100
+          api_key: tw_invalid
+
+      - name: Check that the action failed
+        if: steps.invalid.outcome != 'failure'
+        run: exit 1
