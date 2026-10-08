@@ -1,5 +1,7 @@
 # Tidewave Connect Action
 
+> Note: this is under development and only available to beta users.
+
 Runs [Tidewave Connect](https://tidewave.ai) for your web app inside a GitHub Actions job, so coding agents in later steps (such as [Claude Code](https://github.com/anthropics/claude-code-action)) can use all Tidewave features through MCP, including the browser: evaluating code in your app's pages, taking screenshots and recording videos.
 
 The action opens Tidewave Connect in a headed Chromium browser (on Xvfb on Linux), signs it in with your Tidewave API key, waits until it is ready and leaves the browser running for the rest of the job.
