@@ -9,7 +9,7 @@ inputs:
   app_url:
     description: The URL of your web app with Tidewave installed, such as http://localhost:4000. The app may still be booting when the action starts.
     required: true
-  api_key:
+  connect_key:
     description: A Tidewave API key, created in your Tidewave account or team settings. Pass it from a secret.
     required: true
   max_wait_time:

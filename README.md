@@ -10,7 +10,7 @@ The action opens Tidewave Connect in a headed Chromium browser (on Xvfb on Linux
 
 - Your app has Tidewave installed and enabled in the environment it runs in on CI.
 - Your app is started in an earlier step, in the background. It may still be booting when the action starts; the action waits for it.
-- A Tidewave API key, created in your [account settings](https://tidewave.ai/settings) (requires a subscription) or in your team settings (uses the team subscription). Store it as a repository secret, such as `TIDEWAVE_API_KEY`.
+- A Tidewave API key, created in your [account settings](https://tidewave.ai/settings) (requires a subscription) or in your team settings (uses the team subscription). Store it as a repository secret, such as `TIDEWAVE_CONNECT_KEY`.
 
 On GitHub-hosted Ubuntu runners, the action uses the preinstalled Google Chrome and Xvfb. Elsewhere, it installs Chromium and its system dependencies through Playwright, which requires `npm` and, on Linux, `sudo`.
 
@@ -51,7 +51,7 @@ jobs:
         id: tidewave
         with:
           app_url: http://localhost:4000
-          api_key: ${{ secrets.TIDEWAVE_API_KEY }}
+          connect_key: ${{ secrets.TIDEWAVE_CONNECT_KEY }}
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -76,7 +76,7 @@ Note that GitHub does not pass secrets to workflows for pull requests from forks
 | Name            | Required | Default               | Description                                                                                    |
 | --------------- | -------- | --------------------- | ---------------------------------------------------------------------------------------------- |
 | `app_url`       | Yes      |                       | The URL of your web app, such as `http://localhost:4000`.                                      |
-| `api_key`       | Yes      |                       | Your Tidewave API key. Pass it from a secret.                                                  |
+| `connect_key`   | Yes      |                       | Your Tidewave API key. Pass it from a secret.                                                  |
 | `max_wait_time` | No       | `300`                 | Maximum time in seconds to wait for the app to boot and for Tidewave Connect to be ready.     |
 
 ## Outputs

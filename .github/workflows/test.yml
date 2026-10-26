@@ -19,7 +19,7 @@ jobs:
         uses: ./
         with:
           app_url: http://localhost:4100
-          api_key: tw_test
+          connect_key: tw_test
           max_wait_time: 60
 
       - name: Check that the browser keeps running
@@ -33,7 +33,7 @@ jobs:
         uses: ./
         with:
           app_url: http://localhost:4100
-          api_key: tw_invalid
+          connect_key: tw_invalid
 
       - name: Check that the action failed
         if: steps.invalid.outcome != 'failure'

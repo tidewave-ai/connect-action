@@ -43,11 +43,11 @@ process.exit();
 
 async function run() {
   const appUrl = parseUrl(getInput("app_url"));
-  const apiKey = getInput("api_key");
+  const connectKey = getInput("connect_key");
   const maxWaitTime = Number(getInput("max_wait_time") || "300");
 
-  if (!apiKey) {
-    throw new Error("The api_key input is required.");
+  if (!connectKey) {
+    throw new Error("The connect_key input is required.");
   }
 
   if (!Number.isFinite(maxWaitTime) || maxWaitTime <= 0) {
@@ -57,7 +57,7 @@ async function run() {
   const deadline = Date.now() + maxWaitTime * 1000;
   const connectUrl = new URL("tidewave/connect", appUrl).toString();
 
-  setSecret(apiKey);
+  setSecret(connectKey);
   setOutput("mcp_url", new URL("tidewave/mcp", appUrl).toString());
 
   // We install while the app may still be booting.
@@ -68,7 +68,7 @@ async function run() {
   const teamId = teamIdFromPage(connectPage);
 
   info(`Exchanging the API key with ${tidewaveUrl.origin}.`);
-  const token = await exchangeApiKey(tidewaveUrl, apiKey, teamId);
+  const token = await exchangeConnectKey(tidewaveUrl, connectKey, teamId);
   setSecret(token);
 
   const logFile = join(
@@ -167,14 +167,14 @@ function decodeHtml(value) {
     .replaceAll("&amp;", "&");
 }
 
-async function exchangeApiKey(tidewaveUrl, apiKey, teamId) {
+async function exchangeConnectKey(tidewaveUrl, connectKey, teamId) {
   let response;
 
   try {
     response = await fetch(new URL("api/connect-key-exchange", tidewaveUrl), {
       method: "POST",
       headers: {
-        authorization: `Bearer ${apiKey}`,
+        authorization: `Bearer ${connectKey}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({ team_id: teamId }),
