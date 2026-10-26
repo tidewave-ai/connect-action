@@ -9,6 +9,8 @@
 import { chromium } from "playwright-core";
 
 let browser = null;
+// The token, which we redact from the log, see `redact`.
+let secret = null;
 
 process.on("message", (message) => {
   if (message.type === "start") {
@@ -29,6 +31,7 @@ process.on("SIGTERM", async () => {
 });
 
 async function start({ connectUrl, channel, token, deadline }) {
+  secret = token;
   log(`Launching ${channel ?? "chromium"}.`);
 
   // We run a headed browser (on Xvfb when there is no display), since
@@ -55,32 +58,6 @@ async function start({ connectUrl, channel, token, deadline }) {
   const context = await browser.newContext({ viewport: null });
   const page = await context.newPage();
 
-  // Tidewave Connect picks up the token instead of signing in. It keeps
-  // it in memory only, so we set it on every page load. We also enable
-  // vision mode upfront, as there is no user to do so, which relies on
-  // auto-accepting the tab capture prompt.
-  //
-  // Init scripts also run in child frames and after navigations, so we
-  // only set them on the Connect page itself. This way the app frame,
-  // third-party iframes and pages the top frame navigates to never see
-  // the token. Init scripts run before any page script, so the page
-  // cannot tamper with the check.
-  const { origin, pathname } = new URL(connectUrl);
-
-  await page.addInitScript(
-    ({ token, origin, pathname }) => {
-      if (
-        window === window.top &&
-        location.origin === origin &&
-        location.pathname === pathname
-      ) {
-        window.TIDEWAVE_AUTH_TOKEN = token;
-        window.TIDEWAVE_ENABLE_VISION_MODE = true;
-      }
-    },
-    { token, origin, pathname },
-  );
-
   page.on("console", (message) => {
     log(`[console.${message.type()}] ${message.text()}`);
   });
@@ -93,8 +70,18 @@ async function start({ connectUrl, channel, token, deadline }) {
     log("The Tidewave Connect page crashed.");
   });
 
+  // Tidewave Connect picks up the token from the URL fragment instead
+  // of signing in. We also enable vision mode upfront, as there is no
+  // user to do so, which relies on auto-accepting the tab capture
+  // prompt. The fragment is not sent to the server and Connect removes
+  // it from the URL on load, before it embeds the app.
+  const params = new URLSearchParams({
+    tidewave_auth_token: token,
+    tidewave_enable_vision_mode: "true",
+  });
+
   log(`Opening ${connectUrl}.`);
-  await page.goto(connectUrl);
+  await page.goto(`${connectUrl}#${params}`);
 
   try {
     await page.waitForSelector('html[data-tidewave-connect="ready"]', {
@@ -108,7 +95,7 @@ async function start({ connectUrl, channel, token, deadline }) {
 
     if (status === null) {
       fail(
-        `Tidewave Connect did not load at ${page.url()}. Make sure the app uses a recent Tidewave version.`,
+        `Tidewave Connect did not load at ${withoutFragment(page.url())}. Make sure the app uses a recent Tidewave version.`,
       );
     } else {
       fail(
@@ -123,20 +110,35 @@ async function start({ connectUrl, channel, token, deadline }) {
 }
 
 function log(line) {
-  const timestamped = `[${new Date().toISOString()}] ${line}`;
+  const timestamped = `[${new Date().toISOString()}] ${redact(line)}`;
   console.log(timestamped);
   send({ type: "log", line: timestamped });
 }
 
 async function fail(message) {
   log(`Error: ${message}`);
-  send({ type: "error", message });
+  send({ type: "error", message: redact(message) });
   await browser?.close().catch(() => {});
   process.exit(1);
 }
 
 function send(message) {
   if (process.connected) process.send(message);
+}
+
+// The URL we open has the token in its fragment, so it may show up in
+// errors and page messages. GitHub masks it in the workflow log, but
+// not in the browser log file, which may be uploaded as an artifact,
+// so we redact it everywhere.
+function redact(text) {
+  return secret ? text.replaceAll(secret, "***") : text;
+}
+
+// The page did not consume the fragment, if it failed to load.
+function withoutFragment(url) {
+  const parsed = new URL(url);
+  parsed.hash = "";
+  return parsed.toString();
 }
 
 function errorMessage(error) {

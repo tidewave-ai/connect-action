@@ -6,9 +6,10 @@
 // running after the action step. When asked to enable vision mode, it
 // tries tab capture, which Tidewave uses for screenshots and recordings.
 //
-// Like the real Connect page, it embeds the app in a same-origin frame,
-// and the app may embed third-party frames. Both report whether they
-// see the token, which only the Connect page itself should.
+// Like the real Connect page, it reads the token from the URL fragment
+// and removes it, then embeds the app in a same-origin frame, and the
+// app may embed third-party frames. Both report whether they can see
+// the token in the Connect page URL, which they should not.
 
 import { createServer } from "node:http";
 
@@ -26,10 +27,7 @@ const connectPage = `<!doctype html>
   <head>
     <script type="module" src="http://localhost:${port}/tc/control.js"></script>
   </head>
-  <body>
-    <iframe src="/app"></iframe>
-    <iframe src="http://127.0.0.1:${port}/third-party"></iframe>
-  </body>
+  <body></body>
 </html>`;
 
 function framePage(name) {
@@ -37,11 +35,20 @@ function framePage(name) {
 <html>
   <body>
     <script>
+      // Cross-origin frames cannot read the parent URL at all.
+      function parentHasToken() {
+        try {
+          return window.parent.location.href.includes("test-token");
+        } catch {
+          return false;
+        }
+      }
+
       fetch("/frame", {
         method: "POST",
         body: JSON.stringify({
           name: "${name}",
-          hasToken: "TIDEWAVE_AUTH_TOKEN" in window,
+          hasToken: parentHasToken(),
         }),
       });
     </script>
@@ -50,8 +57,20 @@ function framePage(name) {
 }
 
 const controlJs = `
-if (window.TIDEWAVE_AUTH_TOKEN === "test-token") {
+const params = new URLSearchParams(location.hash.slice(1));
+history.replaceState(null, "", location.pathname);
+
+function embed(src) {
+  const iframe = document.createElement("iframe");
+  iframe.src = src;
+  document.body.append(iframe);
+}
+
+if (params.get("tidewave_auth_token") === "test-token") {
   document.documentElement.dataset.tidewaveConnect = "connecting";
+
+  embed("/app");
+  embed("http://127.0.0.1:${port}/third-party");
 
   setTimeout(() => {
     document.documentElement.dataset.tidewaveConnect = "ready";
@@ -59,7 +78,7 @@ if (window.TIDEWAVE_AUTH_TOKEN === "test-token") {
 
   setInterval(() => fetch("/heartbeat", { method: "POST" }), 1000);
 
-  if (window.TIDEWAVE_ENABLE_VISION_MODE === true) {
+  if (params.get("tidewave_enable_vision_mode") === "true") {
     navigator.mediaDevices
       .getDisplayMedia({ preferCurrentTab: true })
       .then(() => ({ ok: true }))

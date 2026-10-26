@@ -1,7 +1,7 @@
 // Checks that the browser started by the action is still running, by
 // looking at the heartbeats of the mock Connect page, and that tab
-// capture works. Also checks that the token is not set in the frames
-// embedded by the Connect page.
+// capture works. Also checks that the frames embedded by the Connect page
+// cannot see the token in its URL.
 
 import assert from "node:assert/strict";
 
