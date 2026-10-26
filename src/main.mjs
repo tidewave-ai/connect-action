@@ -171,7 +171,7 @@ async function exchangeApiKey(tidewaveUrl, apiKey, teamId) {
   let response;
 
   try {
-    response = await fetch(new URL("api/api-key-exchange", tidewaveUrl), {
+    response = await fetch(new URL("api/connect-key-exchange", tidewaveUrl), {
       method: "POST",
       headers: {
         authorization: `Bearer ${apiKey}`,

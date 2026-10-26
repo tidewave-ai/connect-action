@@ -96,7 +96,7 @@ const server = createServer(async (request, response) => {
   const route = `${request.method} ${new URL(request.url, "http://localhost").pathname}`;
 
   switch (route) {
-    case "POST /api/api-key-exchange":
+    case "POST /api/connect-key-exchange":
       return exchange(request, response);
 
     case "GET /tidewave/connect":
